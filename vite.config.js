@@ -13,7 +13,8 @@ export default defineConfig({
         news:        'news.html',
         gallery:     'gallery.html',
         contact:     'contact.html',
-        '404':       '404.html',
+        '404':              '404.html',
+        'mentions-legales': 'mentions-legales.html',
       },
       output: {
         manualChunks: function (id) {

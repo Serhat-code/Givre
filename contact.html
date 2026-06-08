@@ -104,9 +104,9 @@
   <!-- ── Page Hero ──────────────────────────────────────── -->
   <section id="main-content" class="page-hero">
     <div class="container">
-      <p class="page-hero-num fade-in">05 — Contact</p>
-      <h1 class="page-hero-title fade-in delay-1" aria-label="Nous rencontrer">Nous rencontrer</h1>
-      <p class="page-hero-sub fade-in delay-2">
+      <p class="page-hero-num fade-in" data-en="05 — Contact">05 — Contact</p>
+      <h1 class="page-hero-title fade-in delay-1" aria-label="Nous rencontrer" data-en="Meet us">Nous rencontrer</h1>
+      <p class="page-hero-sub fade-in delay-2" data-en="Come and experience Givré. Our teams welcome you for a personalised consultation or simply to discover our world.">
         Venez vivre l'expérience Givré. Nos équipes vous accueillent avec plaisir pour une consultation personnalisée ou simplement pour découvrir notre univers.
       </p>
     </div>
@@ -219,7 +219,7 @@
 
       <!-- Social -->
       <div style="padding-top: 80px; text-align: center;" class="fade-in">
-        <p class="section-num" style="text-align: center; margin-bottom: 32px;">Suivez-nous</p>
+        <p class="section-num" style="text-align: center; margin-bottom: 32px;" data-en="Follow us">Suivez-nous</p>
         <div style="display: flex; justify-content: center; gap: 48px;">
           <a href="#" class="link-underline" style="font-size: 14px;">Instagram</a>
           <a href="#" class="link-underline" style="font-size: 14px;">Facebook</a>
@@ -233,18 +233,18 @@
   <!-- ── Formulaire de consultation ────────────────────────── -->
   <section class="contact-form-section" aria-labelledby="h-form">
     <div class="container">
-      <p class="section-num fade-in">Rendez-vous privé</p>
-      <h2 class="section-title fade-in delay-1" id="h-form">Demander une consultation</h2>
+      <p class="section-num fade-in" data-en="Private appointment">Rendez-vous privé</p>
+      <h2 class="section-title fade-in delay-1" id="h-form" data-en="Request a consultation">Demander une consultation</h2>
 
       <form class="contact-form fade-in delay-2" action="#" method="post" novalidate>
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label" for="f-prenom">Prénom</label>
-            <input class="form-input" id="f-prenom" name="prenom" type="text" placeholder="Votre prénom" autocomplete="given-name" required />
+            <label class="form-label" for="f-prenom" data-en="First name">Prénom</label>
+            <input class="form-input" id="f-prenom" name="prenom" type="text" placeholder="Votre prénom" data-en-ph="Your first name" autocomplete="given-name" required />
           </div>
           <div class="form-group">
-            <label class="form-label" for="f-nom">Nom</label>
-            <input class="form-input" id="f-nom" name="nom" type="text" placeholder="Votre nom" autocomplete="family-name" required />
+            <label class="form-label" for="f-nom" data-en="Last name">Nom</label>
+            <input class="form-input" id="f-nom" name="nom" type="text" placeholder="Votre nom" data-en-ph="Your last name" autocomplete="family-name" required />
           </div>
         </div>
 
@@ -254,29 +254,29 @@
             <input class="form-input" id="f-email" name="email" type="email" placeholder="votre@email.com" autocomplete="email" required />
           </div>
           <div class="form-group">
-            <label class="form-label" for="f-tel">Téléphone</label>
+            <label class="form-label" for="f-tel" data-en="Phone">Téléphone</label>
             <input class="form-input" id="f-tel" name="telephone" type="tel" placeholder="+33 6 00 00 00 00" autocomplete="tel" />
           </div>
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="f-type">Type de consultation</label>
+          <label class="form-label" for="f-type" data-en="Type of consultation">Type de consultation</label>
           <select class="form-select" id="f-type" name="type">
-            <option value="" disabled selected>Choisir un type</option>
-            <option value="decouverte">Découverte de la collection</option>
-            <option value="conseil">Conseil personnalisé</option>
-            <option value="prive">Atelier privé</option>
-            <option value="cadeau">Conseil cadeau</option>
+            <option value="" disabled selected data-en="Select a type">Choisir un type</option>
+            <option value="decouverte" data-en="Collection discovery">Découverte de la collection</option>
+            <option value="conseil" data-en="Personal consultation">Conseil personnalisé</option>
+            <option value="prive" data-en="Private workshop">Atelier privé</option>
+            <option value="cadeau" data-en="Gift advice">Conseil cadeau</option>
           </select>
         </div>
 
         <div class="form-group">
           <label class="form-label" for="f-message">Message</label>
-          <textarea class="form-textarea" id="f-message" name="message" placeholder="Décrivez vos envies, occasions, ou toute question particulière…" rows="4"></textarea>
+          <textarea class="form-textarea" id="f-message" name="message" placeholder="Décrivez vos envies, occasions, ou toute question particulière…" data-en-ph="Describe your wishes, occasions, or any specific question…" rows="4"></textarea>
         </div>
 
         <button class="form-submit" type="submit">
-          <span>Envoyer la demande</span>
+          <span data-en="Send request">Envoyer la demande</span>
           <span aria-hidden="true">→</span>
         </button>
       </form>
@@ -297,6 +297,7 @@
             <li><a href="collections.html">02 — Collections</a></li>
             <li><a href="news.html">03 — Actualités</a></li>
             <li><a href="gallery.html">04 — Galerie</a></li>
+            <li><a href="mentions-legales.html">Mentions légales</a></li>
             <li><a href="contact.html">05 — Contact</a></li>
           </ul>
         </div>
@@ -326,6 +327,7 @@
     </div>
   </footer>
 
+  <script type="module" src="/js/i18n.js"></script>
   <script type="module" src="/js/main.js"></script>
 </body>
 </html>
