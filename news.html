@@ -2,19 +2,65 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Actualités — GIVRÉ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Actualités — GIVRÉ | Haute Parfumerie Paris</title>
+  <meta name="description" content="Lancements, événements et actualités de la maison Givré. Parfumerie parisienne d'exception." />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://givre-parfums.com/news.html" />
+
+  <!-- Open Graph -->
+  <meta property="og:type"        content="website" />
+  <meta property="og:site_name"   content="GIVRÉ Parfums" />
+  <meta property="og:title"       content="Actualités — GIVRÉ | Haute Parfumerie Paris" />
+  <meta property="og:description" content="Lancements, événements et réflexions sur l'art de la parfumerie Givré." />
+  <meta property="og:url"         content="https://givre-parfums.com/news.html" />
+  <meta property="og:image"       content="https://givre-parfums.com/og-image.svg" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card"        content="summary_large_image" />
+  <meta name="twitter:title"       content="Actualités — GIVRÉ" />
+  <meta name="twitter:description" content="Lancements, événements et réflexions sur l'art de la parfumerie Givré." />
+  <meta name="twitter:image"       content="https://givre-parfums.com/og-image.svg" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Inter:wght@300;400;500&display=swap" />
   <link rel="stylesheet" href="css/style.css" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {"@type":"ListItem","position":1,"name":"Accueil","item":"https://givre-parfums.com/"},
+      {"@type":"ListItem","position":2,"name":"Actualités","item":"https://givre-parfums.com/news.html"}
+    ]
+  }
+  </script>
 </head>
 <body>
 
+  <!-- ── Skip-to-content ──────────────────────────────── -->
+  <a href="#main-content" class="skip-link">Aller au contenu</a>
+
+  <!-- ── Curseur custom ────────────────────────────────── -->
+  <div id="cursor-dot"  aria-hidden="true"></div>
+  <div id="cursor-ring" aria-hidden="true"></div>
+
+  <!-- ── Grain & vignette ──────────────────────────────── -->
+  <div id="grain"    aria-hidden="true"></div>
+  <div id="vignette" aria-hidden="true"></div>
+
+  <!-- ── Transition de page ────────────────────────────── -->
+  <div id="page-transition" aria-hidden="true"></div>
+
   <!-- ── Header ─────────────────────────────────────────── -->
-  <header class="site-header scrolled">
+  <header class="site-header scrolled" role="banner">
     <div class="container">
       <div class="nav-logo">
-        <a href="index.html">GIVRÉ</a>
+        <a href="index.html" aria-label="GIVRÉ — Accueil">GIVRÉ</a>
       </div>
-      <nav>
+      <nav aria-label="Navigation principale">
         <ul class="nav-links">
           <li><a href="collections.html">Collections</a></li>
           <li><a href="news.html" class="active">Actualités</a></li>
@@ -44,10 +90,10 @@
   </nav>
 
   <!-- ── Page Hero ──────────────────────────────────────── -->
-  <section class="page-hero">
+  <section id="main-content" class="page-hero">
     <div class="container">
       <p class="page-hero-num fade-in">03 — Actualités</p>
-      <h1 class="page-hero-title fade-in delay-1">Dernières nouvelles</h1>
+      <h1 class="page-hero-title fade-in delay-1" aria-label="Dernières nouvelles">Dernières nouvelles</h1>
       <p class="page-hero-sub fade-in delay-2">
         Lancements, événements, réflexions sur l'art de la parfumerie. Restez au cœur de l'univers Givré.
       </p>
@@ -60,7 +106,7 @@
       <div class="news-full-list">
 
         <article class="news-item fade-in">
-          <div class="news-date">26 Sept. 2024</div>
+          <time class="news-date" datetime="2024-09-26">26 Sept. 2024</time>
           <div>
             <span class="news-category">Lancement</span>
             <h3 class="news-title">Arctique : une nouvelle vision du froid sublime</h3>
@@ -70,7 +116,7 @@
         </article>
 
         <article class="news-item fade-in delay-1">
-          <div class="news-date">14 Juin 2024</div>
+          <time class="news-date" datetime="2024-06-14">14 Juin 2024</time>
           <div>
             <span class="news-category">Événement</span>
             <h3 class="news-title">Givré au Salon International du Parfum, Paris</h3>
@@ -80,7 +126,7 @@
         </article>
 
         <article class="news-item fade-in delay-2">
-          <div class="news-date">02 Mars 2024</div>
+          <time class="news-date" datetime="2024-03-02">02 Mars 2024</time>
           <div>
             <span class="news-category">Brochure</span>
             <h3 class="news-title">L'art de la composition : notre processus créatif</h3>
@@ -90,7 +136,7 @@
         </article>
 
         <article class="news-item fade-in">
-          <div class="news-date">18 Jan. 2024</div>
+          <time class="news-date" datetime="2024-01-18">18 Jan. 2024</time>
           <div>
             <span class="news-category">Actualité</span>
             <h3 class="news-title">Nocturne remporte le Prix de l'Excellence Olfactive 2024</h3>
@@ -100,7 +146,7 @@
         </article>
 
         <article class="news-item fade-in delay-1">
-          <div class="news-date">05 Nov. 2023</div>
+          <time class="news-date" datetime="2023-11-05">05 Nov. 2023</time>
           <div>
             <span class="news-category">Brochure</span>
             <h3 class="news-title">Les matières premières Givré : sourcing éthique et traçabilité</h3>
@@ -110,7 +156,7 @@
         </article>
 
         <article class="news-item fade-in delay-2">
-          <div class="news-date">22 Août 2023</div>
+          <time class="news-date" datetime="2023-08-22">22 Août 2023</time>
           <div>
             <span class="news-category">Lancement</span>
             <h3 class="news-title">Brume Blanche : la légèreté érigée en art</h3>
@@ -120,7 +166,7 @@
         </article>
 
         <article class="news-item fade-in">
-          <div class="news-date">14 Juin 2023</div>
+          <time class="news-date" datetime="2023-06-14">14 Juin 2023</time>
           <div>
             <span class="news-category">Événement</span>
             <h3 class="news-title">Ouverture de la boutique parisienne, Place Vendôme</h3>
@@ -130,7 +176,7 @@
         </article>
 
         <article class="news-item fade-in delay-1">
-          <div class="news-date">28 Fév. 2023</div>
+          <time class="news-date" datetime="2023-02-28">28 Fév. 2023</time>
           <div>
             <span class="news-category">Brochure</span>
             <h3 class="news-title">Portrait du nez : rencontre avec Élise Moreau</h3>
@@ -140,7 +186,7 @@
         </article>
 
         <article class="news-item fade-in delay-2">
-          <div class="news-date">10 Oct. 2022</div>
+          <time class="news-date" datetime="2022-10-10">10 Oct. 2022</time>
           <div>
             <span class="news-category">Actualité</span>
             <h3 class="news-title">Givré annonce sa collection Solstice pour le printemps 2023</h3>
@@ -150,7 +196,7 @@
         </article>
 
         <article class="news-item fade-in">
-          <div class="news-date">03 Juil. 2022</div>
+          <time class="news-date" datetime="2022-07-03">03 Juil. 2022</time>
           <div>
             <span class="news-category">Brochure</span>
             <h3 class="news-title">Le oud : or liquide de la parfumerie</h3>
@@ -160,7 +206,7 @@
         </article>
 
         <article class="news-item fade-in delay-1">
-          <div class="news-date">15 Avr. 2022</div>
+          <time class="news-date" datetime="2022-04-15">15 Avr. 2022</time>
           <div>
             <span class="news-category">Lancement</span>
             <h3 class="news-title">Cristal Noir : l'intensité incarnée</h3>
@@ -170,7 +216,7 @@
         </article>
 
         <article class="news-item fade-in delay-2">
-          <div class="news-date">01 Jan. 2022</div>
+          <time class="news-date" datetime="2022-01-01">01 Jan. 2022</time>
           <div>
             <span class="news-category">Actualité</span>
             <h3 class="news-title">Fondation de la maison Givré</h3>
@@ -235,6 +281,6 @@
     </div>
   </footer>
 
-  <script src="js/main.js"></script>
+  <script type="module" src="/js/main.js"></script>
 </body>
 </html>

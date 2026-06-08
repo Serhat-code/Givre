@@ -2,19 +2,77 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Contact — GIVRÉ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Contact — GIVRÉ | Nous rencontrer</title>
+  <meta name="description" content="Visitez la boutique Givré Place Vendôme, Paris. Consultations personnalisées et découverte de nos fragrances." />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://givre-parfums.com/contact.html" />
+
+  <!-- Open Graph -->
+  <meta property="og:type"        content="website" />
+  <meta property="og:site_name"   content="GIVRÉ Parfums" />
+  <meta property="og:title"       content="Contact — GIVRÉ | Nous rencontrer" />
+  <meta property="og:description" content="Boutique Place Vendôme, Paris. Consultations personnalisées, horaires et coordonnées." />
+  <meta property="og:url"         content="https://givre-parfums.com/contact.html" />
+  <meta property="og:image"       content="https://givre-parfums.com/og-image.svg" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card"        content="summary_large_image" />
+  <meta name="twitter:title"       content="Contact — GIVRÉ" />
+  <meta name="twitter:description" content="Boutique Place Vendôme, Paris. Consultations personnalisées, horaires et coordonnées." />
+  <meta name="twitter:image"       content="https://givre-parfums.com/og-image.svg" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Inter:wght@300;400;500&display=swap" />
   <link rel="stylesheet" href="css/style.css" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "name": "GIVRÉ Parfums",
+    "url": "https://givre-parfums.com",
+    "telephone": "+33-1-00-00-00-00",
+    "email": "hello@givre-parfums.com",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "12, Place Vendôme",
+      "addressLocality": "Paris",
+      "postalCode": "75001",
+      "addressCountry": "FR"
+    },
+    "openingHoursSpecification": [
+      {"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday"],"opens":"10:00","closes":"19:00"},
+      {"@type":"OpeningHoursSpecification","dayOfWeek":"Saturday","opens":"10:00","closes":"20:00"},
+      {"@type":"OpeningHoursSpecification","dayOfWeek":"Sunday","opens":"12:00","closes":"18:00"}
+    ]
+  }
+  </script>
 </head>
 <body>
 
+  <!-- ── Skip-to-content ──────────────────────────────── -->
+  <a href="#main-content" class="skip-link">Aller au contenu</a>
+
+  <!-- ── Curseur custom ────────────────────────────────── -->
+  <div id="cursor-dot"  aria-hidden="true"></div>
+  <div id="cursor-ring" aria-hidden="true"></div>
+
+  <!-- ── Grain & vignette ──────────────────────────────── -->
+  <div id="grain"    aria-hidden="true"></div>
+  <div id="vignette" aria-hidden="true"></div>
+
+  <!-- ── Transition de page ────────────────────────────── -->
+  <div id="page-transition" aria-hidden="true"></div>
+
   <!-- ── Header ─────────────────────────────────────────── -->
-  <header class="site-header scrolled">
+  <header class="site-header scrolled" role="banner">
     <div class="container">
       <div class="nav-logo">
-        <a href="index.html">GIVRÉ</a>
+        <a href="index.html" aria-label="GIVRÉ — Accueil">GIVRÉ</a>
       </div>
-      <nav>
+      <nav aria-label="Navigation principale">
         <ul class="nav-links">
           <li><a href="collections.html">Collections</a></li>
           <li><a href="news.html">Actualités</a></li>
@@ -44,10 +102,10 @@
   </nav>
 
   <!-- ── Page Hero ──────────────────────────────────────── -->
-  <section class="page-hero">
+  <section id="main-content" class="page-hero">
     <div class="container">
       <p class="page-hero-num fade-in">05 — Contact</p>
-      <h1 class="page-hero-title fade-in delay-1">Nous rencontrer</h1>
+      <h1 class="page-hero-title fade-in delay-1" aria-label="Nous rencontrer">Nous rencontrer</h1>
       <p class="page-hero-sub fade-in delay-2">
         Venez vivre l'expérience Givré. Nos équipes vous accueillent avec plaisir pour une consultation personnalisée ou simplement pour découvrir notre univers.
       </p>
@@ -172,6 +230,59 @@
     </div>
   </section>
 
+  <!-- ── Formulaire de consultation ────────────────────────── -->
+  <section class="contact-form-section" aria-labelledby="h-form">
+    <div class="container">
+      <p class="section-num fade-in">Rendez-vous privé</p>
+      <h2 class="section-title fade-in delay-1" id="h-form">Demander une consultation</h2>
+
+      <form class="contact-form fade-in delay-2" action="#" method="post" novalidate>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="f-prenom">Prénom</label>
+            <input class="form-input" id="f-prenom" name="prenom" type="text" placeholder="Votre prénom" autocomplete="given-name" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="f-nom">Nom</label>
+            <input class="form-input" id="f-nom" name="nom" type="text" placeholder="Votre nom" autocomplete="family-name" required />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="f-email">Email</label>
+            <input class="form-input" id="f-email" name="email" type="email" placeholder="votre@email.com" autocomplete="email" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="f-tel">Téléphone</label>
+            <input class="form-input" id="f-tel" name="telephone" type="tel" placeholder="+33 6 00 00 00 00" autocomplete="tel" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="f-type">Type de consultation</label>
+          <select class="form-select" id="f-type" name="type">
+            <option value="" disabled selected>Choisir un type</option>
+            <option value="decouverte">Découverte de la collection</option>
+            <option value="conseil">Conseil personnalisé</option>
+            <option value="prive">Atelier privé</option>
+            <option value="cadeau">Conseil cadeau</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="f-message">Message</label>
+          <textarea class="form-textarea" id="f-message" name="message" placeholder="Décrivez vos envies, occasions, ou toute question particulière…" rows="4"></textarea>
+        </div>
+
+        <button class="form-submit" type="submit">
+          <span>Envoyer la demande</span>
+          <span aria-hidden="true">→</span>
+        </button>
+      </form>
+    </div>
+  </section>
+
   <!-- ── Footer ─────────────────────────────────────────── -->
   <footer class="site-footer">
     <div class="container">
@@ -214,6 +325,6 @@
     </div>
   </footer>
 
-  <script src="js/main.js"></script>
+  <script type="module" src="/js/main.js"></script>
 </body>
 </html>

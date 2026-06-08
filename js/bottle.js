@@ -1,314 +1,486 @@
 /* ============================================================
-   GIVRÉ — Three.js Glass Bottle — Fresnel + Squircle
+   GIVRÉ — WebGL Scene  (Awwwards Edition — ESM / Vite)
+   • Mesh verre Fresnel + aberration chromatique
+   • IBL procédural (environnement givré gradient)
+   • Frost shader 4 octaves (croît après le preloader)
+   • AO / shadow contact au sol
+   • Camera reveal z:15→11 déclenché par givre:intro-start
+   • Particules atmosphériques : poussière de glace flottante
+   • Parallaxe souris en temps réel
+   • Dissolution au scroll : flacon → nuage de givre (0→1 page entière)
    ============================================================ */
+import {
+  WebGLRenderer, Scene, PerspectiveCamera,
+  Vector2, LatheGeometry, ShaderMaterial,
+  DoubleSide, AdditiveBlending, NormalBlending,
+  Group, Mesh, BufferGeometry, BufferAttribute, Points,
+  PlaneGeometry,
+} from 'three';
+
 (function () {
   'use strict';
 
-  if (typeof THREE === 'undefined') { console.error('Three.js manquant'); return; }
-  const canvas = document.getElementById('hero-canvas');
-  if (!canvas) { console.error('Canvas introuvable'); return; }
+  var canvas = document.getElementById('hero-canvas');
+  if (!canvas) return;
 
-  /* ── Renderer ─────────────────────────────────────────── */
-  const renderer = new THREE.WebGLRenderer({ canvas, alpha: false, antialias: false });
-  renderer.setClearColor(0x0a0a0a, 1);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  /* ─── Fallback mobile / CPU faible ──────────────────────── */
+  if (
+    window.innerWidth < 768 ||
+    (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2)
+  ) {
+    canvas.style.display = 'none';
+    return;
+  }
+
+  /* ─── Renderer ───────────────────────────────────────────── */
+  var renderer = new WebGLRenderer({ canvas: canvas, alpha: false, antialias: true });
+  renderer.setClearColor(0x070810, 1);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
   renderer.setSize(window.innerWidth, window.innerHeight, false);
 
-  const scene  = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 100);
-  camera.position.set(0, 0, 8);
+  var scene  = new Scene();
+  var camera = new PerspectiveCamera(36, window.innerWidth / window.innerHeight, 0.1, 100);
+  camera.position.set(0, 0, 15); /* z=15 → 11 révélé après preloader */
 
-  window.addEventListener('resize', () => {
+  window.addEventListener('resize', function () {
     renderer.setSize(window.innerWidth, window.innerHeight, false);
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
   }, { passive: true });
 
-  /* ── Profil du flacon ─────────────────────────────────────
-     Inspiré d'un flacon de luxe rectangulaire :
-     base large → corps droit → épaule prononcée → col fin → bouchon
-  ─────────────────────────────────────────────────────────── */
-  const profile = [
-    [0.00, -2.10],   // centre bas
-    [0.52, -2.10],   // bord de la base (large)
-    [0.55, -2.00],   // biseau base
-    [0.53, -1.80],
-    [0.51, -0.80],   // corps — relativement constant
-    [0.51,  0.00],
-    [0.51,  0.50],
-    [0.50,  0.80],
-    [0.44,  1.10],   // épaule — commence à rétrécir
-    [0.22,  1.30],   // épaule brusque (angle marqué)
-    [0.16,  1.38],   // départ col
-    [0.15,  1.55],   // col
-    [0.15,  1.68],   // fin col
-    [0.24,  1.76],   // lèvre du bouchon
-    [0.24,  2.08],   // corps du bouchon
-    [0.20,  2.18],   // dessus bouchon biseauté
-    [0.00,  2.18],   // centre dessus
+  /* ─── Profil flacon (Byredo large + bouchon massif) ─────── */
+  var profilePts = [
+    new Vector2(0.000, -2.40),
+    new Vector2(0.740, -2.40),
+    new Vector2(0.770, -2.26),
+    new Vector2(0.770, -2.05),
+    new Vector2(0.762, -0.55),
+    new Vector2(0.762,  0.00),
+    new Vector2(0.762,  0.72),
+    new Vector2(0.750,  1.02),
+    new Vector2(0.680,  1.22),
+    new Vector2(0.440,  1.44),
+    new Vector2(0.225,  1.60),
+    new Vector2(0.205,  1.70),
+    new Vector2(0.205,  1.82),
+    new Vector2(0.720,  1.94),
+    new Vector2(0.735,  2.02),
+    new Vector2(0.738,  3.10),
+    new Vector2(0.720,  3.22),
+    new Vector2(0.000,  3.22),
   ];
 
-  /* ── Squircle (superellipse n=4.5) ────────────────────────
-     Donne une section rectangulaire aux coins arrondis
-     plutôt qu'un cylindre rond → aspect flacon authentique
-  ─────────────────────────────────────────────────────────── */
-  const SQ_N = 4.5;
+  var latheGeo = new LatheGeometry(profilePts, 128);
 
-  function squirclePoint(angle, r) {
-    const ca = Math.cos(angle), sa = Math.sin(angle);
-    const d  = Math.pow(
-      Math.pow(Math.abs(ca), SQ_N) + Math.pow(Math.abs(sa), SQ_N),
-      1 / SQ_N
-    );
-    return { x: ca / d * r, z: sa / d * r };
-  }
-
-  function squircleNormal(angle) {
-    // Dérivée de la superellipse → normale extérieure
-    const ca = Math.cos(angle), sa = Math.sin(angle);
-    let nx = Math.sign(ca) * Math.pow(Math.abs(ca), SQ_N - 1);
-    let nz = Math.sign(sa) * Math.pow(Math.abs(sa), SQ_N - 1);
-    const nl = Math.sqrt(nx * nx + nz * nz) || 1;
-    return { nx: nx / nl, nz: nz / nl };
-  }
-
-  /* ── Génération des particules ────────────────────────── */
-  const origArr   = [], targArr  = [];
-  const normalArr = [], delayArr = [], sizeArr = [];
-
-  function addParticle(x, y, z, nx, ny, nz, size) {
-    origArr.push(x, y, z);
-    normalArr.push(nx, ny, nz);
-    sizeArr.push(size);
-    delayArr.push(Math.random());
-
-    // Position d'éclatement : vers l'extérieur + dérive aléatoire
-    const hr    = Math.sqrt(x * x + z * z) + 0.01;
-    const ang   = Math.atan2(z, x) + (Math.random() - 0.5) * 0.9;
-    const push  = 3.5 + Math.random() * 9.0;
-    const yBias = y > 0 ? 1.2 : -0.8;
-    targArr.push(
-      Math.cos(ang) * (hr + push),
-      y + yBias * Math.random() * 3.5 + (Math.random() - 0.5) * 3.0,
-      Math.sin(ang) * (hr + push)
-    );
-  }
-
-  const SEG   = 7;   // subdivisions entre deux points de profil
-  const RING  = 36;  // points par anneau (densité angulaire)
-
-  for (let i = 0; i < profile.length - 1; i++) {
-    const [r0, y0] = profile[i];
-    const [r1, y1] = profile[i + 1];
-
-    for (let s = 0; s < SEG; s++) {
-      const t  = s / SEG;
-      const r  = r0 + (r1 - r0) * t;
-      const y  = y0 + (y1 - y0) * t;
-      const count = Math.max(8, Math.round(RING * (r / 0.55 + 0.15)));
-
-      for (let j = 0; j < count; j++) {
-        const angle = (j / count) * Math.PI * 2;
-        const sq    = squirclePoint(angle, r);
-        const nrm   = squircleNormal(angle);
-
-        // Taille de particule plus grande aux coins (Fresnel anticipé en JS aussi)
-        const cornerFactor = Math.pow(
-          Math.pow(Math.abs(Math.cos(angle * 2)), 4) +
-          Math.pow(Math.abs(Math.sin(angle * 2)), 4),
-          0.25
-        );
-        const size = 1.0 + cornerFactor * 2.2 + Math.random() * 1.0;
-
-        addParticle(sq.x, y, sq.z, nrm.nx, 0, nrm.nz, size);
-      }
-    }
-  }
-
-  // Face du bas (fond du flacon)
-  for (let rStep = 0.05; rStep <= 0.52; rStep += 0.09) {
-    const cnt = Math.max(4, Math.round(rStep * 50));
-    for (let j = 0; j < cnt; j++) {
-      const angle = (j / cnt) * Math.PI * 2;
-      const sq    = squirclePoint(angle, rStep);
-      addParticle(sq.x, -2.10, sq.z, 0, -1, 0, 1.0 + Math.random());
-    }
-  }
-
-  // Face du dessus du bouchon
-  for (let rStep = 0.04; rStep <= 0.20; rStep += 0.06) {
-    const cnt = Math.max(4, Math.round(rStep * 60));
-    for (let j = 0; j < cnt; j++) {
-      const angle = (j / cnt) * Math.PI * 2;
-      const sq    = squirclePoint(angle, rStep);
-      addParticle(sq.x, 2.18, sq.z, 0, 1, 0, 1.0 + Math.random());
-    }
-  }
-
-  // Reflets intérieurs — caustics simulés (qques particules à l'intérieur)
-  for (let i = 0; i < 300; i++) {
-    const ti   = Math.random();
-    const pidx = Math.floor(ti * (profile.length - 1));
-    const rMax = profile[Math.min(pidx, profile.length - 1)][0] * 0.6;
-    const ri   = Math.random() * rMax;
-    const ai   = Math.random() * Math.PI * 2;
-    const yi   = profile[Math.min(pidx, profile.length - 1)][1];
-    const sq   = squirclePoint(ai, ri);
-    addParticle(sq.x, yi, sq.z, 0, 0, 0, 0.5 + Math.random() * 0.8);
-  }
-
-  console.log('GIVRÉ — particules verre:', origArr.length / 3);
-
-  /* ── BufferGeometry ───────────────────────────────────── */
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position',  new THREE.BufferAttribute(new Float32Array(origArr.slice()), 3));
-  geo.setAttribute('aOrigPos',  new THREE.BufferAttribute(new Float32Array(origArr),  3));
-  geo.setAttribute('aTargPos',  new THREE.BufferAttribute(new Float32Array(targArr),  3));
-  geo.setAttribute('aNormal',   new THREE.BufferAttribute(new Float32Array(normalArr),3));
-  geo.setAttribute('aDelay',    new THREE.BufferAttribute(new Float32Array(delayArr), 1));
-  geo.setAttribute('aSize',     new THREE.BufferAttribute(new Float32Array(sizeArr),  1));
-
-  /* ── Vertex Shader ────────────────────────────────────── */
-  const vert = `
-    attribute vec3  aOrigPos;
-    attribute vec3  aTargPos;
-    attribute vec3  aNormal;
-    attribute float aDelay;
-    attribute float aSize;
-
-    uniform float uProg;
-    uniform float uPR;
-    uniform float uTime;
-
-    varying float vFresnel;
-    varying float vAlpha;
-    varying float vProgress;
-
-    float easeInOutCubic(float t) {
-      return t < 0.5 ? 4.0*t*t*t : 1.0 - pow(-2.0*t+2.0,3.0)*0.5;
-    }
-
-    void main() {
-      float delay = aDelay * 0.45;
-      float t = clamp((uProg - delay) / (1.0 - delay + 0.001), 0.0, 1.0);
-      float e = easeInOutCubic(t);
-
-      // Micro-oscillation au repos (s'éteint quand les particules partent)
-      float bAmp = (1.0 - e) * 0.006;
-      vec3 breath = vec3(
-        sin(uTime * 0.72 + aDelay * 6.28) * bAmp,
-        cos(uTime * 0.51 + aDelay * 3.14) * bAmp * 1.4,
-        sin(uTime * 0.88 + aDelay * 4.71) * bAmp
+  /* ─── Déformation squircle n=4.5 → rectangle arrondi ─────── */
+  (function squircleDeform(geo) {
+    var arr = geo.attributes.position.array;
+    var N = 4.5;
+    for (var i = 0; i < arr.length; i += 3) {
+      var x = arr[i], z = arr[i + 2];
+      var r = Math.sqrt(x * x + z * z);
+      if (r < 0.001) continue;
+      var a = Math.atan2(z, x);
+      var d = Math.pow(
+        Math.pow(Math.abs(Math.cos(a)), N) + Math.pow(Math.abs(Math.sin(a)), N),
+        1.0 / N
       );
-
-      vec3 pos = mix(aOrigPos + breath, aTargPos, e);
-
-      // ── Fresnel (verre : transparent en face, brillant sur les bords) ──
-      vec3 worldPos = (modelMatrix * vec4(aOrigPos, 1.0)).xyz;
-      vec3 toCamera = normalize(cameraPosition - worldPos);
-
-      // Normale de surface (horizontale pour le corps, verticale pour les faces)
-      float hLen = length(aNormal.xz);
-      vec3 nrm   = hLen > 0.01
-                   ? normalize(vec3(aNormal.x, 0.0, aNormal.z))
-                   : normalize(aNormal);
-
-      float ndotv  = abs(dot(nrm, toCamera));
-      vFresnel     = pow(1.0 - ndotv, 2.8);  // rebord brillant, face transparente
-
-      vec4 mv      = modelViewMatrix * vec4(pos, 1.0);
-      gl_Position  = projectionMatrix * mv;
-
-      // Particules plus grosses sur les bords Fresnel
-      float pSize  = aSize * (0.5 + vFresnel * 1.2);
-      gl_PointSize = pSize * uPR * (360.0 / max(-mv.z, 0.1));
-
-      vAlpha    = (1.0 - e * 0.95) * mix(0.55, 1.0, aDelay);
-      vProgress = e;
+      arr[i]     = (Math.cos(a) / d) * r;
+      arr[i + 2] = (Math.sin(a) / d) * r;
     }
-  `;
+    geo.attributes.position.needsUpdate = true;
+    geo.computeVertexNormals();
+  })(latheGeo);
 
-  /* ── Fragment Shader ──────────────────────────────────── */
-  const frag = `
-    varying float vFresnel;
-    varying float vAlpha;
-    varying float vProgress;
+  /* ─── SHADER VERRE + BOUCHON ─────────────────────────────── */
+  var glassVert = [
+    'uniform float uProgress;',
+    'uniform float uTime;',
+    'varying vec3  vNormal;',
+    'varying vec3  vWorldPos;',
+    'varying float vT;',
+    'varying float vY;',
+    'void main() {',
+    /* Fragmentation très progressive : commence dès le scroll, s'étale sur toute la page */
+    '  float t  = smoothstep(0.0, 0.92, uProgress);',
+    '  vec3 rd  = vec3(position.x, position.y * 0.20, position.z);',
+    '  float dl = length(rd);',
+    '  vec3 dir = (dl > 0.001) ? (rd / dl) : vec3(0.0, 1.0, 0.0);',
+    '  vec3 pos = position + dir * t * 3.0;',
+    '  float mv = sin(uTime * 1.1 + position.y * 2.4) * 0.002 * position.y;',
+    '  pos.y += mv * (1.0 - t);',
+    '  float br = sin(uTime * 0.85 + position.y * 1.6) * 0.003 * (1.0 - t);',
+    '  pos += normal * br;',
+    '  vNormal   = normalize(mat3(modelMatrix) * normal);',
+    '  vWorldPos = (modelMatrix * vec4(pos, 1.0)).xyz;',
+    '  vT = t; vY = position.y;',
+    '  gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);',
+    '}',
+  ].join('\n');
 
-    void main() {
-      vec2  uv   = gl_PointCoord - 0.5;
-      float dist = length(uv);
-      if (dist > 0.5) discard;
+  var glassFrag = [
+    'uniform vec3  uCamPos;',
+    'uniform float uProgress;',
+    'uniform float uFrost;',
+    'varying vec3  vNormal;',
+    'varying vec3  vWorldPos;',
+    'varying float vT;',
+    'varying float vY;',
 
-      // Forme de la particule : cercle doux avec cœur lumineux
-      float halo = 1.0 - smoothstep(0.0, 0.50, dist);
-      float core = 1.0 - smoothstep(0.0, 0.12, dist);
+    'float sp(vec3 L, vec3 N, vec3 V, float pw) {',
+    '  return pow(max(dot(N, normalize(L + V)), 0.0), pw);',
+    '}',
+    'float h2(vec2 p) {',
+    '  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);',
+    '}',
+    'float vn(vec2 p) {',
+    '  vec2 i = floor(p); vec2 f = fract(p);',
+    '  f = f * f * (3.0 - 2.0 * f);',
+    '  return mix(mix(h2(i),h2(i+vec2(1,0)),f.x),mix(h2(i+vec2(0,1)),h2(i+vec2(1,1)),f.x),f.y);',
+    '}',
 
-      // ── Couleurs verre ──────────────────────────────────
-      // Corps du verre : bleu-vert très subtil, quasi invisible
-      vec3 glassBody = vec3(0.38, 0.55, 0.65);
-      // Bord Fresnel : reflet blanc-bleu glacé (lumière rasante)
-      vec3 glassRim  = vec3(0.82, 0.92, 0.98);
-      // Cœur de la caustic : blanc pur
-      vec3 caustic   = vec3(1.00, 1.00, 1.00);
+    /* IBL procédural */
+    'vec3 envSample(vec3 R) {',
+    '  float t = clamp(R.y * 0.5 + 0.5, 0.0, 1.0);',
+    '  return mix(vec3(0.04, 0.07, 0.14), vec3(0.70, 0.86, 1.00), t * t);',
+    '}',
 
-      vec3 col = mix(glassBody, glassRim,  vFresnel);
-           col = mix(col,       caustic,   core * 0.6);
+    'void main() {',
+    '  vec3  N = normalize(vNormal);',
+    '  vec3  V = normalize(uCamPos - vWorldPos);',
+    '  vec3 R  = reflect(-V, N);',
+    '  vec3 L0 = normalize(vec3( 5.0,  8.0,  4.0) - vWorldPos);',
+    '  vec3 L1 = normalize(vec3(-4.5,  2.5, -4.0) - vWorldPos);',
+    '  vec3 L2 = normalize(vec3(-1.5, -4.0,  4.5) - vWorldPos);',
+    '  vec3 L3 = normalize(vec3( 0.5,  9.0,  2.0) - vWorldPos);',
 
-      // ── Alpha : verre = transparent en centre, opaque sur les bords ──
-      float bodyAlpha    = halo  * 0.06;               // quasi invisible (verre)
-      float fresnelAlpha = halo  * vFresnel * 0.70;    // rebords lumineux
-      float coreAlpha    = core  * 0.50;               // cœur lumineux
-      float a = (bodyAlpha + fresnelAlpha + coreAlpha) * vAlpha;
+    '  float ndotv = abs(dot(N, V));',
+    '  float fres  = pow(1.0 - ndotv, 3.8);',
+    '  float fres2 = pow(1.0 - ndotv, 1.4);',
 
-      // Légère extinction pendant la dispersion
-      a *= (1.0 - vProgress * 0.4);
+    '  float ab      = fres * 0.018;',
+    '  float fR      = pow(1.0 - max(ndotv - ab,   0.0), 3.8);',
+    '  float fG      = pow(1.0 - ndotv,              3.8);',
+    '  float fB      = pow(1.0 - max(ndotv + ab * 0.5, 0.0), 3.8);',
+    '  vec3 rimAberr = vec3(fR * 0.85, fG * 0.88, fB * 1.00);',
 
-      gl_FragColor = vec4(col, a);
-    }
-  `;
+    '  float s0 = sp(L0, N, V, 600.0);',
+    '  float s1 = sp(L1, N, V, 120.0);',
+    '  float s2 = sp(L2, N, V,  48.0);',
+    '  float s3 = sp(L3, N, V, 320.0);',
+    '  vec3 specular = vec3(1.00,1.00,1.00)*s0*1.20',
+    '                + vec3(0.50,0.72,1.00)*s1*0.55',
+    '                + vec3(0.75,0.88,1.00)*s2*0.18',
+    '                + vec3(1.00,0.97,0.93)*s3*0.50;',
 
-  /* ── Matériau ─────────────────────────────────────────── */
-  const mat = new THREE.ShaderMaterial({
-    vertexShader:   vert,
-    fragmentShader: frag,
+    '  vec3 ibl = envSample(R) * fres * 0.30;',
+
+    '  vec3 glassBody = vec3(0.28,0.46,0.62)*(1.0-fres)*0.05',
+    '                 + rimAberr',
+    '                 + vec3(0.20,0.35,0.52)*fres2*0.07',
+    '                 + specular + ibl;',
+    '  float glassA = fres*0.85 + fres2*0.09 + s0*0.95+s1*0.45+s2*0.12+s3*0.50 + 0.012;',
+    '  glassA = clamp(glassA,0.0,1.0);',
+
+    /* Frost 4 octaves */
+    '  float frostLine  = -2.4 + uFrost * 5.6;',
+    '  float frostMask  = smoothstep(frostLine - 1.0, frostLine, vY);',
+    '  float fn1 = vn(vWorldPos.xz * 6.0);',
+    '  float fn2 = vn(vWorldPos.xz * 13.0) * 0.50;',
+    '  float fn3 = vn(vWorldPos.xz * 24.0 + 7.3) * 0.15;',
+    '  float fn4 = vn(vWorldPos.yz *  8.0) * 0.35;',
+    '  float frostNoise = fn1 + fn2 + fn3 + fn4;',
+    '  float crystal = smoothstep(0.80, 0.86, frostNoise) * frostMask * (1.0-vT) * fres2 * 0.55;',
+    '  glassBody += vec3(0.82, 0.91, 1.00) * crystal;',
+    '  glassA    += crystal * 0.40;',
+
+    /* Bouchon */
+    '  float dif0   = 0.62 + 0.38 * max(dot(N, L0), 0.0);',
+    '  float dif1   = 0.38 + 0.35 * max(dot(N, L1), 0.0);',
+    '  float dif    = max(dif0, dif1);',
+    '  float sc0    = sp(L0, N, V, 90.0)*0.70;',
+    '  float sc1    = sp(L1, N, V, 40.0)*0.35;',
+    '  float sc3    = sp(L3, N, V,150.0)*0.45;',
+    '  vec3 capBase = vec3(0.30, 0.56, 0.82);',
+    '  vec3 capCol  = capBase * dif',
+    '               + vec3(0.72,0.88,1.00)*(sc0+sc1+sc3)',
+    '               + vec3(0.40,0.65,0.90)*pow(1.0-ndotv,2.2)*0.22',
+    '               + envSample(R) * fres * 0.15;',
+    '  float capFrost = smoothstep(0.82, 0.88, frostNoise) * frostMask * 0.20;',
+    '  capCol += vec3(0.80, 0.92, 1.00) * capFrost;',
+
+    '  float isCap = smoothstep(1.87, 1.96, vY);',
+    '  vec3  col   = mix(glassBody, capCol, isCap);',
+    '  float alpha = mix(glassA,    1.0,    isCap);',
+    /* Verre disparaît très progressivement sur toute la hauteur de page */
+    '  alpha *= 1.0 - smoothstep(0.0, 0.92, uProgress);',
+    '  gl_FragColor = vec4(col, alpha);',
+    '}',
+  ].join('\n');
+
+  var glassMat = new ShaderMaterial({
+    vertexShader:   glassVert,
+    fragmentShader: glassFrag,
     uniforms: {
-      uProg: { value: 0.0 },
-      uPR:   { value: Math.min(window.devicePixelRatio, 2) },
-      uTime: { value: 0.0 },
+      uProgress: { value: 0.0 },
+      uTime:     { value: 0.0 },
+      uCamPos:   { value: camera.position },
+      uFrost:    { value: 0.0 },
     },
     transparent: true,
+    side:        DoubleSide,
     depthWrite:  false,
-    blending:    THREE.AdditiveBlending,
+    blending:    AdditiveBlending,
   });
 
-  const points = new THREE.Points(geo, mat);
-  points.rotation.x = 0.04;           // légère inclinaison
-  points.position.x = 1.5;            // décalé à droite
-  points.position.y = -0.1;
-  scene.add(points);
+  /* ─── Ombre contact (AO) sous le flacon ──────────────────── */
+  var shadowMat = new ShaderMaterial({
+    vertexShader: [
+      'varying vec2 vUv;',
+      'void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    ].join('\n'),
+    fragmentShader: [
+      'varying vec2 vUv;',
+      'void main() {',
+      '  float d = length(vUv - 0.5) * 2.0;',
+      '  float s = smoothstep(1.0, 0.0, d) * 0.45;',
+      '  float e = smoothstep(0.6, 0.0, d) * 0.20;',
+      '  gl_FragColor = vec4(0.0, 0.02, 0.06, s + e);',
+      '}',
+    ].join('\n'),
+    transparent: true,
+    depthWrite:  false,
+    blending:    NormalBlending,
+  });
+  var shadowPlane = new Mesh(new PlaneGeometry(2.8, 1.6), shadowMat);
+  shadowPlane.rotation.x = -Math.PI / 2;
+  shadowPlane.position.set(1.5, -2.45, 0);
+  scene.add(shadowPlane);
 
-  /* ── Boucle d'animation ───────────────────────────────── */
-  let smooth = 0, lastTs = performance.now();
+  /* ─── Groupe principal ───────────────────────────────────── */
+  var bottleGroup = new Group();
+  bottleGroup.position.set(1.5, -0.5, 0);
+  scene.add(bottleGroup);
+  bottleGroup.add(new Mesh(latheGeo, glassMat));
 
+  /* ─── Particules dissolution au scroll ───────────────────── */
+  var gArr   = latheGeo.attributes.position.array;
+  var vCount = Math.floor(gArr.length / 3);
+  var P      = Math.min(vCount, 9000);
+  var stride = Math.max(1, Math.floor(vCount / P));
+  var pOrig  = new Float32Array(P * 3);
+  var pTarg  = new Float32Array(P * 3);
+  var pDelay = new Float32Array(P);
+  var pSize  = new Float32Array(P);
+  var pCap   = new Float32Array(P);
+
+  for (var i = 0; i < P; i++) {
+    var vi = (i * stride) % vCount;
+    var px = gArr[vi*3], py = gArr[vi*3+1], pz = gArr[vi*3+2];
+    pOrig[i*3]   = px; pOrig[i*3+1] = py; pOrig[i*3+2] = pz;
+    pCap[i]   = (py > 1.90) ? 1.0 : 0.0;
+    pDelay[i] = Math.random();
+    pSize[i]  = 1.2 + Math.random() * 3.5;
+
+    /* Nuage de givre large : dérive très haut + forte expansion radiale */
+    var radialR = Math.sqrt(px*px + pz*pz) + 0.01;
+    var ang     = Math.atan2(pz, px) + (Math.random() - 0.5) * 1.2;
+    var spread  = 2.0 + Math.random() * 6.0;
+    var upDrift = (Math.random() > 0.08)
+      ? (2.0 + Math.random() * 7.5)
+      : -(0.5 + Math.random() * 2.5);
+
+    pTarg[i*3]   = Math.cos(ang) * (radialR + spread);
+    pTarg[i*3+1] = py + upDrift;
+    pTarg[i*3+2] = Math.sin(ang) * (radialR + spread);
+  }
+  var pGeo = new BufferGeometry();
+  pGeo.setAttribute('position', new BufferAttribute(pOrig.slice(), 3));
+  pGeo.setAttribute('aOrig',    new BufferAttribute(pOrig,  3));
+  pGeo.setAttribute('aTarg',    new BufferAttribute(pTarg,  3));
+  pGeo.setAttribute('aDelay',   new BufferAttribute(pDelay, 1));
+  pGeo.setAttribute('aSize',    new BufferAttribute(pSize,  1));
+  pGeo.setAttribute('aIsCap',   new BufferAttribute(pCap,   1));
+
+  var pMat = new ShaderMaterial({
+    vertexShader: [
+      'attribute vec3  aOrig; attribute vec3  aTarg;',
+      'attribute float aDelay; attribute float aSize; attribute float aIsCap;',
+      'uniform float uProg; uniform float uPR;',
+      'varying float vA; varying float vCap;',
+      'void main() {',
+      /* Activation dès le début : décalage par particule jusqu'à 20 % du scroll */
+      '  float stagger = aDelay * 0.20;',
+      '  float t = clamp((uProg - stagger) / (1.0 - stagger + 0.001), 0.0, 1.0);',
+      '  float e = t * t * (3.0 - 2.0 * t);',
+      '  vec3 pos = mix(aOrig, aTarg, e);',
+      '  vec4 mv  = modelViewMatrix * vec4(pos, 1.0);',
+      '  gl_Position  = projectionMatrix * mv;',
+      /* Les particules grossissent doucement à mesure qu'elles s'écartent */
+      '  float sizeBoost = 1.0 + e * 1.2;',
+      '  gl_PointSize = aSize * uPR * sizeBoost * (300.0 / max(-mv.z, 0.1));',
+      /* Apparition douce étalée, reste en suspension légère */
+      '  vA   = smoothstep(0.0, 0.28, uProg) * (1.0 - e * 0.12) * mix(0.22, 0.68, aDelay);',
+      '  vCap = aIsCap;',
+      '}',
+    ].join('\n'),
+    fragmentShader: [
+      'varying float vA; varying float vCap;',
+      'void main() {',
+      '  vec2 uv = gl_PointCoord - 0.5; float d = length(uv);',
+      '  if (d > 0.5) discard;',
+      '  float g    = 1.0 - smoothstep(0.0, 0.5,  d);',
+      '  float core = 1.0 - smoothstep(0.0, 0.12, d);',
+      '  vec3 cG = mix(vec3(0.40, 0.62, 0.82), vec3(0.92, 0.97, 1.00), core);',
+      '  vec3 cC = mix(vec3(0.28, 0.52, 0.80), vec3(0.60, 0.82, 1.00), core);',
+      '  gl_FragColor = vec4(mix(cG, cC, vCap), (g * 0.07 + core * 0.28) * vA);',
+      '}',
+    ].join('\n'),
+    uniforms: { uProg: { value: 0.0 }, uPR: { value: Math.min(window.devicePixelRatio, 1.5) } },
+    transparent: true, depthWrite: false, blending: AdditiveBlending,
+  });
+  bottleGroup.add(new Points(pGeo, pMat));
+
+  /* ─── Particules atmosphériques — poussière de glace ──────── */
+  var ATM     = 280;
+  var atmOrig = new Float32Array(ATM * 3);
+  var atmOff  = new Float32Array(ATM);
+  var atmSpd  = new Float32Array(ATM);
+
+  for (var j = 0; j < ATM; j++) {
+    atmOrig[j*3]   = (Math.random() - 0.5) * 22;
+    atmOrig[j*3+1] = (Math.random() - 0.5) * 16;
+    atmOrig[j*3+2] = (Math.random() - 0.5) * 10 - 3;
+    atmOff[j]      = Math.random();
+    atmSpd[j]      = 0.04 + Math.random() * 0.06;
+  }
+
+  var atmGeo = new BufferGeometry();
+  atmGeo.setAttribute('position', new BufferAttribute(atmOrig, 3));
+  atmGeo.setAttribute('aOff',     new BufferAttribute(atmOff,  1));
+  atmGeo.setAttribute('aSpd',     new BufferAttribute(atmSpd,  1));
+
+  /* uProg alimente le bloom froid : particules s'intensifient avec le scroll */
+  var atmMat = new ShaderMaterial({
+    vertexShader: [
+      'attribute float aOff; attribute float aSpd;',
+      'uniform float uTime; uniform float uPR; uniform float uProg;',
+      'varying float vOff; varying float vProg;',
+      'void main() {',
+      '  float y = mod(position.y + uTime * aSpd + aOff * 16.0, 18.0) - 9.0;',
+      '  float x = position.x + sin(uTime * 0.25 + aOff * 6.28) * 0.45;',
+      '  float z = position.z + cos(uTime * 0.18 + aOff * 4.12) * 0.28;',
+      '  vec4 mv = modelViewMatrix * vec4(x, y, z, 1.0);',
+      '  gl_Position  = projectionMatrix * mv;',
+      /* Bloom froid subtil : particules atmosphériques s'étoffent avec le scroll */
+      '  float bloom  = 1.0 + uProg * 2.0;',
+      '  gl_PointSize = uPR * bloom * (1.1 + 0.7 * abs(sin(uTime * 2.2 + aOff * 6.28)));',
+      '  vOff = aOff; vProg = uProg;',
+      '}',
+    ].join('\n'),
+    fragmentShader: [
+      'varying float vOff; varying float vProg; uniform float uTime;',
+      'void main() {',
+      '  vec2 uv = gl_PointCoord - 0.5;',
+      '  if (length(uv) > 0.5) discard;',
+      '  float c  = 1.0 - smoothstep(0.0, 0.5, length(uv));',
+      /* Opacité douce : brume de givre délicate */
+      '  float tw = (0.07 + 0.13 * abs(sin(uTime * 2.2 + vOff * 6.28))) * (0.4 + vProg * 1.2);',
+      '  gl_FragColor = vec4(0.72, 0.88, 1.00, c * tw);',
+      '}',
+    ].join('\n'),
+    uniforms: {
+      uTime: { value: 0.0 },
+      uPR:   { value: Math.min(window.devicePixelRatio, 1.5) },
+      uProg: { value: 0.0 },
+    },
+    transparent: true, depthWrite: false, blending: AdditiveBlending,
+  });
+  scene.add(new Points(atmGeo, atmMat));
+
+  /* ─── Parallaxe souris ───────────────────────────────────── */
+  var mouseTargX = 0, mouseTargY = 0;
+  var mouseCurX  = 0, mouseCurY  = 0;
+
+  document.addEventListener('mousemove', function (e) {
+    mouseTargX = (e.clientX / window.innerWidth  - 0.5) * 2;
+    mouseTargY = (e.clientY / window.innerHeight - 0.5) * 2;
+  }, { passive: true });
+
+  /* ─── État animation ─────────────────────────────────────── */
+  var smooth       = 0.0;   /* uProgress : 0 → 1 sur toute la hauteur de page */
+  var autoRotY     = 0.0;
+  var frostProg    = 0.0;   /* reste à 0 jusqu'à givre:intro-start */
+  var cameraZ      = 15.0;
+  var introStarted = false; /* verrou : intro ne joue pas pendant le preloader */
+  var lastTs       = performance.now();
+
+  var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ── Source de vérité unique : rend si l'onglet est visible ── */
+  function updateLoop() {
+    renderer.setAnimationLoop(document.hidden ? null : tick);
+  }
+
+  /* ── Boucle de rendu ─────────────────────────────────────── */
   function tick(ts) {
-    requestAnimationFrame(tick);
-    const delta = Math.min((ts - lastTs) / 1000, 0.05);
+    var delta = Math.min((ts - lastTs) / 1000.0, 0.05);
     lastTs = ts;
 
-    const pageH  = Math.max(document.body.scrollHeight - window.innerHeight, 1);
-    const raw    = (window.scrollY - window.innerHeight * 0.08) / (pageH * 0.75);
-    const target = Math.min(1.0, Math.max(0.0, raw));
-    smooth += (target - smooth) * Math.min(1.0, delta * 5.5);
+    /* Dissolution scroll : lerp lent pour une transition très fluide */
+    var pageH  = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
+    var target = Math.max(0.0, Math.min(1.0, window.scrollY / pageH));
+    smooth += (target - smooth) * Math.min(1.0, delta * 2.2);
 
-    mat.uniforms.uProg.value  = smooth;
-    mat.uniforms.uTime.value += delta;
+    /* Givre : croît seulement après que le preloader ait disparu */
+    if (introStarted) {
+      if (!reducedMotion) frostProg = Math.min(1.0, frostProg + delta / 4.0);
+      else                frostProg = 1.0;
+    }
 
-    // Rotation douce — accélère légèrement lors de l'éclatement
-    points.rotation.y += delta * (0.10 + smooth * 0.65);
+    /* Reveal caméra : z=15 → 11, déclenché par givre:intro-start */
+    if (introStarted && cameraZ > 11.0) {
+      cameraZ = Math.max(11.0, cameraZ - delta * 2.8);
+      camera.position.z = cameraZ;
+    }
+
+    /* Parallaxe souris */
+    if (!reducedMotion) {
+      mouseCurX += (mouseTargX - mouseCurX) * delta * 2.8;
+      mouseCurY += (mouseTargY - mouseCurY) * delta * 2.8;
+    }
+
+    /* Rotation : légère accélération avec la dissolution */
+    autoRotY += delta * (0.07 + smooth * 0.10);
+    bottleGroup.rotation.y = autoRotY + mouseCurX * 0.28;
+    bottleGroup.rotation.x = 0.04    + mouseCurY * -0.14;
+
+    /* Légère dérive verticale du groupe : nuage monte avec le scroll */
+    bottleGroup.position.y = -0.5 + smooth * 0.55;
+
+    glassMat.uniforms.uProgress.value = smooth;
+    glassMat.uniforms.uTime.value    += delta;
+    glassMat.uniforms.uFrost.value    = frostProg;
+    pMat.uniforms.uProg.value         = smooth;
+    atmMat.uniforms.uTime.value      += delta;
+    atmMat.uniforms.uProg.value       = smooth;
 
     renderer.render(scene, camera);
   }
 
-  requestAnimationFrame(tick);
+  /* ── Démarrage de la boucle (frames initiales rendues, intro gelée) */
+  renderer.setAnimationLoop(tick);
+
+  /* ── Intro : frost + reveal caméra démarrés par le preloader ── */
+  document.addEventListener('givre:intro-start', function () {
+    introStarted = true;
+    lastTs = performance.now();
+  });
+
+  /* ── Pause quand l'onglet est masqué ─────────────────────── */
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) lastTs = performance.now();
+    updateLoop();
+  });
 
 }());
