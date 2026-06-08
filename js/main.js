@@ -318,6 +318,60 @@
   }
 }());
 
+/* ── Formulaire de contact ────────────────────────────────── */
+(function initContactForm() {
+  var form = document.querySelector('.contact-form');
+  if (!form) return;
+
+  /* Nettoie l'erreur dès que l'utilisateur retape */
+  form.addEventListener('input', function (e) {
+    if (e.target.classList.contains('form-error') && e.target.value.trim()) {
+      e.target.classList.remove('form-error');
+    }
+  }, { passive: true });
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    /* Validation : champs requis + format email */
+    var valid = true;
+    form.querySelectorAll('[required]').forEach(function (field) {
+      var ok = field.value.trim().length > 0;
+      if (ok && field.type === 'email') {
+        ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(field.value.trim());
+      }
+      field.classList.toggle('form-error', !ok);
+      if (!ok) valid = false;
+    });
+    if (!valid) {
+      form.querySelector('.form-error').focus();
+      return;
+    }
+
+    /* Fade-out du formulaire */
+    form.classList.add('form-sent');
+
+    /* Message de confirmation inséré juste après */
+    var success = document.createElement('div');
+    success.className = 'form-success';
+    success.setAttribute('role', 'status');
+    success.innerHTML =
+      '<p class="section-num">Demande envoyée</p>' +
+      '<h3 class="form-success-title">Notre équipe vous<br>recontactera sous 48 h.</h3>' +
+      '<p class="form-success-sub">Nous avons bien reçu votre demande de consultation.<br>' +
+      'En attendant, explorez notre collection.</p>' +
+      '<a href="collections.html" class="hero-cta">' +
+      '<span>Voir la collection</span><span aria-hidden="true">→</span></a>';
+
+    form.parentNode.insertBefore(success, form.nextSibling);
+
+    /* Double rAF : laisse le navigateur calculer l'état initial avant la transition */
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () { success.classList.add('visible'); });
+    });
+  });
+}());
+
 /* ── Footer manifeste reveal ─────────────────────────────── */
 (function initFooterManifeste() {
   var els = document.querySelectorAll('.footer-manifeste-text, .footer-manifeste-sub');

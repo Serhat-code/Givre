@@ -1029,6 +1029,43 @@ body.cursor-hidden #cursor-ring { opacity: 0; }
 .form-submit:hover::before { transform: scaleX(1); }
 .form-submit span { position: relative; z-index: 1; }
 
+/* ── État erreur champ ────────────────────────────────────── */
+.form-input.form-error,
+.form-select.form-error,
+.form-textarea.form-error { border-color: rgba(200, 70, 70, 0.65); }
+
+/* ── Formulaire envoyé (fade-out) ────────────────────────── */
+.contact-form.form-sent {
+  opacity: 0;
+  transform: translateY(-10px);
+  pointer-events: none;
+  transition: opacity 0.4s var(--ease-in-out), transform 0.4s var(--ease-in-out);
+}
+
+/* ── Message de confirmation ─────────────────────────────── */
+.form-success {
+  max-width: 640px;
+  padding-top: 8px;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.9s var(--ease-out) 0.2s, transform 0.9s var(--ease-out) 0.2s;
+}
+.form-success.visible { opacity: 1; transform: translateY(0); }
+.form-success-title {
+  font-family: var(--serif);
+  font-size: clamp(32px, 5vw, 52px);
+  font-weight: 300;
+  line-height: 1.15;
+  color: var(--white);
+  margin: 16px 0 24px;
+}
+.form-success-sub {
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--grey);
+  margin-bottom: 40px;
+}
+
 /* ── Contact details — 1 colonne sous 700px ──────────────── */
 @media (max-width: 700px) {
   .contact-details { grid-template-columns: 1fr; }
