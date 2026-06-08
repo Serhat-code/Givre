@@ -14,7 +14,7 @@
   /* Lance la barre de chargement */
   if (fill) {
     /* Petit délai pour que la transition CSS soit active */
-    setTimeout(function () { fill.style.width = '100%'; }, 60);
+    setTimeout(function () { fill.style.transform = 'scaleX(1)'; }, 60);
   }
 
   /* Masque le preloader après 2 secondes */

@@ -9,14 +9,6 @@
    • Parallaxe souris en temps réel
    • Dissolution au scroll : flacon → nuage de givre (0→1 page entière)
    ============================================================ */
-import {
-  WebGLRenderer, Scene, PerspectiveCamera,
-  Vector2, LatheGeometry, ShaderMaterial,
-  DoubleSide, AdditiveBlending, NormalBlending,
-  Group, Mesh, BufferGeometry, BufferAttribute, Points,
-  PlaneGeometry,
-} from 'three';
-
 (function () {
   'use strict';
 
@@ -31,6 +23,28 @@ import {
     canvas.style.display = 'none';
     return;
   }
+
+  /* ─── Three.js en import dynamique ───────────────────────── */
+  /* Vite isole Three.js dans un chunk séparé, téléchargé UNIQUEMENT quand
+     cette branche s'exécute (desktop). Sur mobile / CPU faible / page sans
+     <canvas>, on a déjà fait return ci-dessus → le ~123 Ko gzip n'est
+     jamais chargé ni parsé. */
+  import('three').then(function (THREE) {
+    var WebGLRenderer     = THREE.WebGLRenderer,
+        Scene             = THREE.Scene,
+        PerspectiveCamera = THREE.PerspectiveCamera,
+        Vector2           = THREE.Vector2,
+        LatheGeometry     = THREE.LatheGeometry,
+        ShaderMaterial    = THREE.ShaderMaterial,
+        DoubleSide        = THREE.DoubleSide,
+        AdditiveBlending  = THREE.AdditiveBlending,
+        NormalBlending    = THREE.NormalBlending,
+        Group             = THREE.Group,
+        Mesh              = THREE.Mesh,
+        BufferGeometry    = THREE.BufferGeometry,
+        BufferAttribute   = THREE.BufferAttribute,
+        Points            = THREE.Points,
+        PlaneGeometry     = THREE.PlaneGeometry;
 
   /* ─── Renderer ───────────────────────────────────────────── */
   var renderer = new WebGLRenderer({ canvas: canvas, alpha: false, antialias: true });
@@ -472,15 +486,29 @@ import {
   renderer.setAnimationLoop(tick);
 
   /* ── Intro : frost + reveal caméra démarrés par le preloader ── */
-  document.addEventListener('givre:intro-start', function () {
+  function startIntro() {
     introStarted = true;
     lastTs = performance.now();
-  });
+  }
+  /* Race-safe : Three.js étant async, le preloader a pu émettre l'évènement
+     avant ce point. S'il a déjà posé .done, on démarre tout de suite. */
+  var preloaderEl = document.getElementById('preloader');
+  if (!preloaderEl || preloaderEl.classList.contains('done')) {
+    startIntro();
+  } else {
+    document.addEventListener('givre:intro-start', startIntro, { once: true });
+  }
 
   /* ── Pause quand l'onglet est masqué ─────────────────────── */
   document.addEventListener('visibilitychange', function () {
     if (!document.hidden) lastTs = performance.now();
     updateLoop();
+  });
+
+  }).catch(function (err) {
+    /* Si le chunk Three.js echoue a charger, on masque proprement le canvas */
+    canvas.style.display = 'none';
+    if (window.console && console.warn) console.warn('[givre] WebGL indisponible :', err);
   });
 
 }());

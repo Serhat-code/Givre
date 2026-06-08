@@ -1,3 +1,9 @@
+/* Polices auto-hébergées (variable fonts, latin) — servies depuis Vercel,
+   plus aucune requête vers fonts.googleapis.com / fonts.gstatic.com */
+@import '@fontsource-variable/cormorant-garamond/wght.css';
+@import '@fontsource-variable/cormorant-garamond/wght-italic.css';
+@import '@fontsource-variable/inter/wght.css';
+
 /* ============================================================
    GIVRÉ — Stylesheet  (Awwwards Edition)
    ============================================================ */
@@ -16,8 +22,8 @@
   --accent-cold: #4a8ab4;       /* bleu arctique profond */
   --frost:       #d8eaf5;       /* blanc givre */
 
-  --serif:  'Cormorant Garamond', Georgia, serif;
-  --sans:   'Inter', system-ui, sans-serif;
+  --serif:  'Cormorant Garamond Variable', Georgia, serif;
+  --sans:   'Inter Variable', system-ui, sans-serif;
 
   --nav-h:  72px;
 
@@ -203,10 +209,13 @@ body.cursor-hidden #cursor-ring { opacity: 0; }
   animation: preloaderReveal .4s var(--ease-out) .5s forwards;
 }
 .preloader-fill {
-  width: 0%;
+  width: 100%;
   height: 100%;
   background: var(--white);
-  transition: width 1.4s var(--ease-expo) .6s;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 1.4s var(--ease-expo) .6s;
+  will-change: transform;
 }
 @keyframes preloaderReveal {
   to { opacity: 1; transform: translateY(0); }
